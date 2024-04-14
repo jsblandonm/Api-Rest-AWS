@@ -1,0 +1,77 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  api-Rest
+
+  Sample SAM Template for api-Rest
+
+Globals:
+  Function:
+    Timeout: 20
+    MemorySize: 512
+
+Resources:
+  dynamodb:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: dynamodb/
+      Handler: helloworld.App::handleRequest
+      Runtime: java21
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref userTable
+        - Version: "2012-10-17"
+          Statement:
+            - Effect: Allow
+              Action:
+                - dynamodb:DescribeTable
+                - dynamodb:GetItem
+                - dynamodb:PutItem
+                - dynamodb:UpdateItem
+                - dynamodb:DeleteItem
+                - dynamodb:Query
+                - dynamodb:Scan
+              Resource: !GetAtt userTable.Arn
+      Architectures:
+      - x86_64
+      MemorySize: 512
+      Environment:
+        Variables:
+          PARAM1: VALUE
+          JAVA_TOOL_OPTIONS: -XX:+TieredCompilation -XX:TieredStopAtLevel=1
+      Events:
+        HelloWorld:
+          Type: Api
+          Properties:
+            Path: /{proxy+}
+            Method: ANY
+            RestApiId: !Ref ApiGatewayRestApi # Vincula la función con el recurso API Gateway
+
+  # Definicion de la tabla DynamoDB
+  userTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: UserDBaws
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+      ProvisionedThroughput:
+        ReadCapacityUnits: 2
+        WriteCapacityUnits: 2
+  # Definicion del recurso API Gateway
+  ApiGatewayRestApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: Prod
+
+Outputs:
+  HelloWorldApi:
+    Description: API Gateway endpoint URL for Prod stage for Hello World function
+    Value: !Sub "https://${ApiGatewayRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/"
+
+  DynamoDBTableName:
+    Value: !Ref userTable
+    Description: DynamoDB Table Name
